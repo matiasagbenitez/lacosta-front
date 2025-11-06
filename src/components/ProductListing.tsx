@@ -44,11 +44,13 @@ const ProductListing: React.FC = () => {
   const getInitialSearch = () => searchParams.get("search") || "";
   const getInitialBrand = () => searchParams.get("brand") || "all";
   const getInitialCategory = () => searchParams.get("category") || "all";
+  const getInitialAvailable = () => searchParams.get("available") || "all";
 
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState(getInitialSearch);
   const [selectedBrand, setSelectedBrand] = useState(getInitialBrand);
   const [selectedCategory, setSelectedCategory] = useState(getInitialCategory);
+  const [selectedAvailable, setSelectedAvailable] = useState(getInitialAvailable);
 
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState(getInitialPage);
@@ -65,6 +67,7 @@ const ProductListing: React.FC = () => {
     search?: string;
     brand?: string;
     category?: string;
+    available?: string;
   }) => {
     const newParams = new URLSearchParams(searchParams);
 
@@ -100,6 +103,14 @@ const ProductListing: React.FC = () => {
       }
     }
 
+    if (updates.available !== undefined) {
+      if (updates.available === "all") {
+        newParams.delete("available");
+      } else {
+        newParams.set("available", updates.available);
+      }
+    }
+
     // Siempre incluir limit en los params cuando hay paginación
     newParams.set("limit", ITEMS_PER_PAGE.toString());
 
@@ -114,6 +125,7 @@ const ProductListing: React.FC = () => {
     searchTerm,
     selectedBrand,
     selectedCategory,
+    selectedAvailable,
   });
 
   // Sincronizar estados con query params cuando estos cambien externamente
@@ -122,6 +134,7 @@ const ProductListing: React.FC = () => {
     const searchFromUrl = searchParams.get("search") || "";
     const brandFromUrl = searchParams.get("brand") || "all";
     const categoryFromUrl = searchParams.get("category") || "all";
+    const availableFromUrl = searchParams.get("available") || "all";
 
     if (isInitialized) {
       // Solo actualizar si hay diferencias para evitar loops
@@ -136,6 +149,9 @@ const ProductListing: React.FC = () => {
       }
       if (categoryFromUrl !== selectedCategory) {
         setSelectedCategory(categoryFromUrl);
+      }
+      if (availableFromUrl !== selectedAvailable) {
+        setSelectedAvailable(availableFromUrl);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,6 +177,9 @@ const ProductListing: React.FC = () => {
       if (selectedCategory !== "all") {
         newParams.set("category", selectedCategory);
       }
+      if (selectedAvailable !== "all") {
+        newParams.set("available", selectedAvailable);
+      }
       newParams.set("limit", ITEMS_PER_PAGE.toString());
       setSearchParams(newParams, { replace: true });
     }, 0);
@@ -172,7 +191,7 @@ const ProductListing: React.FC = () => {
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, searchTerm, selectedBrand, selectedCategory]);
+  }, [currentPage, searchTerm, selectedBrand, selectedCategory, selectedAvailable]);
 
   // Actualizar query params cuando cambien los estados (solo después de la inicialización)
   useEffect(() => {
@@ -182,10 +201,11 @@ const ProductListing: React.FC = () => {
         search: searchTerm,
         brand: selectedBrand,
         category: selectedCategory,
+        available: selectedAvailable,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, searchTerm, selectedBrand, selectedCategory, isInitialized]);
+  }, [currentPage, searchTerm, selectedBrand, selectedCategory, selectedAvailable, isInitialized]);
 
   // Resetear a página 1 cuando cambien los filtros (solo si no es la carga inicial)
   useEffect(() => {
@@ -193,17 +213,18 @@ const ProductListing: React.FC = () => {
       const filtersChanged =
         prevFiltersRef.current.searchTerm !== searchTerm ||
         prevFiltersRef.current.selectedBrand !== selectedBrand ||
-        prevFiltersRef.current.selectedCategory !== selectedCategory;
+        prevFiltersRef.current.selectedCategory !== selectedCategory ||
+        prevFiltersRef.current.selectedAvailable !== selectedAvailable;
 
       if (filtersChanged && currentPage !== 1) {
         setCurrentPage(1);
       }
 
       // Actualizar la referencia
-      prevFiltersRef.current = { searchTerm, selectedBrand, selectedCategory };
+      prevFiltersRef.current = { searchTerm, selectedBrand, selectedCategory, selectedAvailable };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, selectedBrand, selectedCategory, isInitialized]);
+  }, [searchTerm, selectedBrand, selectedCategory, selectedAvailable, isInitialized]);
 
   const loadBrandsAndCategories = async () => {
     try {
@@ -235,6 +256,10 @@ const ProductListing: React.FC = () => {
 
       if (selectedCategory !== "all") {
         filters.category = selectedCategory;
+      }
+
+      if (selectedAvailable !== "all") {
+        filters.available = selectedAvailable;
       }
 
       if (searchTerm) {
@@ -361,7 +386,7 @@ const ProductListing: React.FC = () => {
       );
     }
 
-    return <Pagination>{items}</Pagination>;
+    return <Pagination size="sm" className="secondary">{items}</Pagination>;
   };
 
   const handleProductUpdate = (updatedProduct: Product) => {
@@ -385,6 +410,7 @@ const ProductListing: React.FC = () => {
     setSearchTerm("");
     setSelectedBrand("all");
     setSelectedCategory("all");
+    setSelectedAvailable("all");
     setCurrentPage(1);
     // Los query params se actualizarán automáticamente por el useEffect
   };
@@ -479,7 +505,7 @@ const ProductListing: React.FC = () => {
                   </Form.Group>
                 </Col>
 
-                <Col md={3}>
+                <Col md={2}>
                   <Form.Group>
                     <Form.Label>🏷️ Marca</Form.Label>
                     <Form.Select
@@ -496,7 +522,7 @@ const ProductListing: React.FC = () => {
                   </Form.Group>
                 </Col>
 
-                <Col md={3}>
+                <Col md={2}>
                   <Form.Group>
                     <Form.Label>📂 Categoría</Form.Label>
                     <Form.Select
@@ -509,6 +535,20 @@ const ProductListing: React.FC = () => {
                           {category}
                         </option>
                       ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+
+                <Col md={2}>
+                  <Form.Group>
+                    <Form.Label>✅ Disponibilidad</Form.Label>
+                    <Form.Select
+                      value={selectedAvailable}
+                      onChange={(e) => setSelectedAvailable(e.target.value)}
+                    >
+                      <option value="all">Todas</option>
+                      <option value="true">Disponibles</option>
+                      <option value="false">No disponibles</option>
                     </Form.Select>
                   </Form.Group>
                 </Col>
@@ -532,12 +572,15 @@ const ProductListing: React.FC = () => {
                       Mostrando {products.length} de {totalProducts} productos{" "}
                       {totalPages > 1 &&
                         `(Página ${currentPage} de ${totalPages})`}
+                      {(searchTerm ||
+                        selectedBrand !== "all" ||
+                        selectedCategory !== "all" ||
+                        selectedAvailable !== "all") && (
+                        <Badge bg="info" className="ms-2">Filtros aplicados</Badge>
+                      )}
                     </span>
-                    {(searchTerm ||
-                      selectedBrand !== "all" ||
-                      selectedCategory !== "all") && (
-                      <Badge bg="info">Filtros aplicados</Badge>
-                    )}
+                    {/* Controles de paginación */}
+                    {totalPages > 1 && <>{renderPagination()}</>}
                   </div>
                 </Col>
               </Row>
@@ -634,15 +677,6 @@ const ProductListing: React.FC = () => {
                   ))
                 )}
               </Row>
-
-              {/* Controles de paginación */}
-              {totalPages > 1 && (
-                <Row className="mt-4">
-                  <Col className="d-flex justify-content-center">
-                    {renderPagination()}
-                  </Col>
-                </Row>
-              )}
             </Card.Body>
           </Card>
         </Col>

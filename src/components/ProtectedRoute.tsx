@@ -23,8 +23,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       const response = await axios.get(`${API_BASE_URL}/auth/check`, {
         withCredentials: true,
       });
-      setIsAuthenticated(response.data.authenticated === true);
-    } catch (error) {
+      const isAuth = response.data.authenticated === true;
+      setIsAuthenticated(isAuth);
+      
+      if (!isAuth) {
+        console.log('Usuario no autenticado, redirigiendo al login');
+      }
+    } catch (error: any) {
+      console.error('Error al verificar autenticación:', error);
       setIsAuthenticated(false);
     } finally {
       setLoading(false);

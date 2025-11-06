@@ -36,9 +36,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       if (response.data.success) {
         toast.success('✅ Autenticación exitosa');
         onLoginSuccess();
-        // Redirigir directamente al listado después del login
+        // Esperar un momento para asegurar que la cookie se establezca antes de redirigir
         setTimeout(() => {
-          navigate('/listado', { replace: true });
+          // Usar window.location para forzar recarga completa y asegurar que las cookies se lean
+          window.location.href = '/listado';
         }, 500);
       } else {
         setError('Código de acceso incorrecto');

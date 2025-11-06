@@ -27,12 +27,14 @@ export const productApi = {
     brand?: string; 
     category?: string; 
     search?: string;
+    available?: string;
     page?: number;
     limit?: number;
   }): Promise<{ products: Product[]; pagination?: ApiResponse<Product[]>['pagination'] }> => {
     const params = new URLSearchParams();
     if (filters?.brand && filters.brand !== 'all') params.append('brand', filters.brand);
     if (filters?.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters?.available && filters.available !== 'all') params.append('available', filters.available);
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
