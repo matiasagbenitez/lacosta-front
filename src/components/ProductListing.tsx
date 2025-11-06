@@ -47,7 +47,8 @@ const ProductListing: React.FC = () => {
   const getInitialAvailable = () => searchParams.get("available") || "all";
 
   // Estados de filtros
-  const [searchTerm, setSearchTerm] = useState(getInitialSearch);
+  const [searchInput, setSearchInput] = useState(getInitialSearch); // Valor del input (sin debounce)
+  const [searchTerm, setSearchTerm] = useState(getInitialSearch); // Valor usado para la búsqueda (con debounce)
   const [selectedBrand, setSelectedBrand] = useState(getInitialBrand);
   const [selectedCategory, setSelectedCategory] = useState(getInitialCategory);
   const [selectedAvailable, setSelectedAvailable] = useState(getInitialAvailable);
@@ -141,7 +142,8 @@ const ProductListing: React.FC = () => {
       if (pageFromUrl && parseInt(pageFromUrl, 10) !== currentPage) {
         setCurrentPage(parseInt(pageFromUrl, 10));
       }
-      if (searchFromUrl !== searchTerm) {
+      if (searchFromUrl !== searchInput) {
+        setSearchInput(searchFromUrl);
         setSearchTerm(searchFromUrl);
       }
       if (brandFromUrl !== selectedBrand) {
@@ -168,8 +170,8 @@ const ProductListing: React.FC = () => {
       if (currentPage !== 1) {
         newParams.set("page", currentPage.toString());
       }
-      if (searchTerm) {
-        newParams.set("search", searchTerm);
+      if (searchInput) {
+        newParams.set("search", searchInput);
       }
       if (selectedBrand !== "all") {
         newParams.set("brand", selectedBrand);
@@ -186,6 +188,18 @@ const ProductListing: React.FC = () => {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debounce para el campo de búsqueda (1 segundo)
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const debounceTimer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 1000); // 1 segundo de debounce
+
+    return () => clearTimeout(debounceTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput, isInitialized]);
 
   // Cargar productos cuando cambien los filtros o la página
   useEffect(() => {
@@ -407,6 +421,7 @@ const ProductListing: React.FC = () => {
   };
 
   const clearFilters = () => {
+    setSearchInput("");
     setSearchTerm("");
     setSelectedBrand("all");
     setSelectedCategory("all");
@@ -498,8 +513,8 @@ const ProductListing: React.FC = () => {
                       <Form.Control
                         type="text"
                         placeholder="Buscar por nombre, EAN, marca..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                       />
                     </InputGroup>
                   </Form.Group>
