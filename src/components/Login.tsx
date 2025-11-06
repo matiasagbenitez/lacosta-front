@@ -30,22 +30,48 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           headers: {
             'Content-Type': 'application/json',
           },
+          validateStatus: (status) => status < 500, // No lanzar error para 4xx
         }
       );
 
-      if (response.data.success) {
+      console.log('Login response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      // Verificar si la respuesta fue exitosa
+      if (response.status === 200 && response.data?.success) {
         toast.success('✅ Autenticación exitosa');
         onLoginSuccess();
+        // Usar navigate de react-router en lugar de window.location para evitar redirects del servidor
         // Esperar un momento para asegurar que la cookie se establezca antes de redirigir
         setTimeout(() => {
-          // Usar window.location para forzar recarga completa y asegurar que las cookies se lean
-          window.location.href = '/listado';
-        }, 500);
+          navigate('/listado', { replace: true });
+        }, 300);
       } else {
-        setError('Código de acceso incorrecto');
+        const errorMsg = response.data?.message || 'Código de acceso incorrecto';
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al iniciar sesión';
+      console.error('Error en login:', err);
+      console.error('Response:', err.response);
+      console.error('Request:', err.request);
+      
+      // Manejar diferentes tipos de errores
+      let errorMessage = 'Error al iniciar sesión';
+      
+      if (err.response) {
+        // El servidor respondió con un código de estado fuera del rango 2xx
+        errorMessage = err.response?.data?.message || `Error ${err.response.status}: ${err.response.statusText}`;
+      } else if (err.request) {
+        // La petición fue hecha pero no se recibió respuesta
+        errorMessage = 'No se recibió respuesta del servidor. Verifica tu conexión.';
+      } else {
+        // Algo pasó al configurar la petición
+        errorMessage = err.message || 'Error al configurar la petición';
+      }
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
