@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const navigate = useNavigate();
@@ -20,10 +18,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   const checkAuthentication = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/auth/check`, {
-        withCredentials: true,
-      });
-      const isAuth = response.data.authenticated === true;
+      const response = await api.get('/auth/check');
+      const isAuth = response.data?.authenticated === true;
       setIsAuthenticated(isAuth);
       
       if (!isAuth) {
@@ -31,7 +27,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       }
     } catch (error: any) {
       console.error('Error al verificar autenticación:', error);
-      setIsAuthenticated(false);
+      // Si hay un error de red o el servidor no responde, asumir no autenticado
+      // pero solo si no es un error 401 (que ya indica no autenticado)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setIsAuthenticated(false);
+      } else {
+        // Para otros errores (red, etc.), intentar verificar si hay una respuesta
+        const isAuth = error.response?.data?.authenticated === true;
+        setIsAuthenticated(isAuth || false);
+      }
     } finally {
       setLoading(false);
     }
